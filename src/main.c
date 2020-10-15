@@ -107,14 +107,14 @@ int main(int argc, char *argv[]) {
 	}
 	const size_t MAX_ARRAY_LENGTH = 100;
 	long long array[MAX_ARRAY_LENGTH];
-	size_t array_length = read_array(array);
+	int array_length = read_array(array);
 	const int FAILED_TO_READ_ARRAY = -5;
 	if (array_length == FAILED_TO_READ_ARRAY) {
 		fprintf(stderr, "Failed to read array\n");
 		return FAILED_TO_READ_ARRAY;
 	}
-	array_length = filter_array(array, &from, from_is_entered, &to, to_is_entered, array_length);
+	array_length = filter_array(array, &from, from_is_entered, &to, to_is_entered, (size_t)array_length);
 	long long sorted_array[MAX_ARRAY_LENGTH];
-	sort(array, sorted_array, array_length);
-	return count_elements_that_differ(array, sorted_array, array_length);
+	sort(array, sorted_array, (size_t)array_length);
+	return count_elements_that_differ(array, sorted_array, (size_t)array_length);
 }
