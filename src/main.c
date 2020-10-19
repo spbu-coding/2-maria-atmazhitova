@@ -1,26 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-// #include "sort.h"
+#include <stdbool.h>
 
-extern void sort(long long *array_to_sort, long long *result, size_t array_length);
+extern void sort(long long *array, size_t array_length);
 
-int is_prefix(char *big_string, char *small_string) {
-	int small_string_length = strlen(small_string);
-	int big_string_length = strlen(big_string);
-	if (big_string_length < small_string_length) {
-		return 0;
-	}
-	for (int i = 0; i < small_string_length; i++) {
-		if (small_string[i] != big_string[i]) {
-			return 0;
-		}
-	}
-	return 1;
-}
-
-int parse_parameters(long long *from, long long *to, int *from_is_entered, int *to_is_entered, int argc, char *argv[]) {
+int parse_parameters(long long *from, long long *to, bool *from_is_entered, bool *to_is_entered, int argc, char *argv[]) {
 	const int PARSED_SUCCESSFULLY = 0, TOO_LITTLE_PARAMETERS = -1, TOO_MANY_PARAMETERS = -2, TOO_MANY_DECLARATIONS = -3, NO_CORRECT_PARAMETERS = -4;
+	const char *from_parameter = "--from=", *to_parameter = "--to=";
+	const int from_parameter_length = strlen(from_parameter), to_parameter_length = strlen(to_parameter);
 	if (argc < 2) {
 		return TOO_LITTLE_PARAMETERS;
 	}
@@ -29,19 +17,19 @@ int parse_parameters(long long *from, long long *to, int *from_is_entered, int *
 	}
 	for (int i = 1; i < argc; i++) {
 		char *current_parameter = argv[i], *end_of_current_parameter = current_parameter + strlen(current_parameter);
-		if (is_prefix(current_parameter, "--from=")) {
+		if (strncmp(current_parameter, from_parameter, from_parameter_length) == 0) {
 			if (*from_is_entered) {
 				return TOO_MANY_DECLARATIONS;
 			}
 			*from_is_entered = 1;
-			*from = strtoll(current_parameter + strlen("--from="), &end_of_current_parameter, 10);
+			*from = strtoll(current_parameter + from_parameter_length, &end_of_current_parameter, 10);
 		}
-		if (is_prefix(current_parameter, "--to=")) {
+		if (strncmp(current_parameter, to_parameter, to_parameter_length) == 0) {
 			if (*to_is_entered) {
 				return TOO_MANY_DECLARATIONS;
 			}
 			*to_is_entered = 1;
-			*to = strtoll(current_parameter + strlen("--to="), &end_of_current_parameter, 10);
+			*to = strtoll(current_parameter + to_parameter_length, &end_of_current_parameter, 10);
 		}
 	}
 	if (!(*from_is_entered) && !(*to_is_entered)) {
@@ -69,14 +57,19 @@ int read_array(long long *arr) {
 	return array_length;
 }
 
-int filter_array(long long *arr, long long *from, int from_is_entered, long long *to, int to_is_entered, size_t array_length) {
+int filter_array(long long *arr, long long from, bool from_is_entered, long long to, bool to_is_entered, size_t array_length) {
 	int number_of_removed_elements = 0;
 	for (size_t i = 0; i < array_length; i++) {
-		if (from_is_entered && arr[i] <= *from) {
+		if (from_is_entered && arr[i] <= from && to_is_entered && arr[i] >= to) {
+			fprintf(stderr, "%lld ", arr[i]);
 			fprintf(stdout, "%lld ", arr[i]);
 			number_of_removed_elements++;
 		}
-		else if (to_is_entered && arr[i] >= *to) {
+		else if (from_is_entered && arr[i] <= from) {
+			fprintf(stdout, "%lld ", arr[i]);
+			number_of_removed_elements++;
+		}
+		else if (to_is_entered && arr[i] >= to) {
 			fprintf(stderr, "%lld ", arr[i]);
 			number_of_removed_elements++;
 		}
@@ -85,6 +78,12 @@ int filter_array(long long *arr, long long *from, int from_is_entered, long long
 		}
 	}
 	return array_length - number_of_removed_elements;
+}
+
+void copy_array(long long *array_from, long long *array_to, size_t array_length) {
+	for (size_t i = 0; i < array_length; i++) {
+		array_to[i] = array_from[i];
+	}
 }
 
 int count_elements_that_differ(long long *arr1, long long *arr2, size_t array_length) {
@@ -99,7 +98,7 @@ int count_elements_that_differ(long long *arr1, long long *arr2, size_t array_le
 
 int main(int argc, char *argv[]) {
 	long long from, to;
-	int from_is_entered = 0, to_is_entered = 0;
+	bool from_is_entered = 0, to_is_entered = 0;
 	int parsing_parameters_result = parse_parameters(&from, &to, &from_is_entered, &to_is_entered, argc, argv);
 	const int PARSED_SUCCESSFULLY = 0;
 	if (parsing_parameters_result != PARSED_SUCCESSFULLY) {
@@ -113,8 +112,9 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "Failed to read array\n");
 		return FAILED_TO_READ_ARRAY;
 	}
-	array_length = filter_array(array, &from, from_is_entered, &to, to_is_entered, (size_t)array_length);
+	array_length = filter_array(array, from, from_is_entered, to, to_is_entered, (size_t)array_length);
 	long long sorted_array[MAX_ARRAY_LENGTH];
-	sort(array, sorted_array, (size_t)array_length);
+	copy_array(array, sorted_array, (size_t)array_length);
+	sort(sorted_array, (size_t)array_length);
 	return count_elements_that_differ(array, sorted_array, (size_t)array_length);
 }
